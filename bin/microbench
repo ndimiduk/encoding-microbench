@@ -1,0 +1,8 @@
+#!/bin/bash
+
+bin=`dirname "$0"`
+bin=`cd "$bin">/dev/null; pwd`
+
+cd ${bin}/..
+
+mvn clean compile exec:java -Dexec.mainClass=com.google.caliper.runner.CaliperMain -Dexec.args="$*"
