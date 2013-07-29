@@ -10,6 +10,7 @@ import org.apache.hadoop.hbase.types.OrderedInt64;
 import org.apache.hadoop.hbase.types.OrderedNumeric;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Order;
+import org.apache.hadoop.io.LongWritable;
 
 import com.google.caliper.AfterExperiment;
 import com.google.caliper.BeforeExperiment;
@@ -138,7 +139,7 @@ public class BenchmarkLongEncodings {
   @Benchmark
   public int orderlyLongWritable(int reps) throws IOException {
     ImmutableBytesWritable w = this.w;
-    long val = this.val;
+    LongWritable val = new LongWritable(this.val);
     LongWritableRowKey r = this.orderlyLongWritable;
     int dummy = 0;
 

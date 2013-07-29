@@ -10,6 +10,7 @@ import org.apache.hadoop.hbase.types.OrderedFloat64;
 import org.apache.hadoop.hbase.types.OrderedNumeric;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Order;
+import org.apache.hadoop.io.DoubleWritable;
 
 import com.google.caliper.AfterExperiment;
 import com.google.caliper.BeforeExperiment;
@@ -122,7 +123,7 @@ public class BenchmarkDoubleEncodings {
   @Benchmark
   public int orderlyDoubleWritable(int reps) throws IOException {
     ImmutableBytesWritable w = this.w;
-    double val = this.val;
+    DoubleWritable val = new DoubleWritable(this.val);
     DoubleWritableRowKey r = this.orderlyDoubleWritable;
     int dummy = 0;
 
