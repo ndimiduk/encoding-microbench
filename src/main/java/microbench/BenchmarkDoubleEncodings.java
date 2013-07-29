@@ -86,6 +86,7 @@ public class BenchmarkDoubleEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      buff.clear();
       ob.encode(buff, val);
       dummy ^= buff.position();
     }
@@ -100,6 +101,7 @@ public class BenchmarkDoubleEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      buff.clear();
       ob.encodeDouble(buff, val);
       dummy ^= buff.position();
     }
@@ -114,6 +116,7 @@ public class BenchmarkDoubleEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      buff.clear();
       o.encodeDouble(buff, val);
       dummy ^= buff.position();
     }

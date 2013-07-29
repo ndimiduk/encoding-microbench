@@ -100,6 +100,7 @@ public class BenchmarkStringEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      buff.clear();
       ob.encode(buff, val);
       dummy ^= buff.position();
     }

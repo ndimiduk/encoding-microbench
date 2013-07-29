@@ -90,6 +90,7 @@ public class BenchmarkLongEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      buff.clear();
       ob.encode(buff, val);
       dummy ^= buff.position();
     }
@@ -104,6 +105,7 @@ public class BenchmarkLongEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      buff.clear();
       ob.encodeLong(buff, val);
       dummy ^= buff.position();
     }
@@ -118,6 +120,7 @@ public class BenchmarkLongEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      buff.clear();
       o.encodeLong(buff, val);
       dummy ^= buff.position();
     }
