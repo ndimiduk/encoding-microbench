@@ -45,7 +45,7 @@ public class BenchmarkStringEncodings {
     w = new ImmutableBytesWritable(array);
     Arrays.fill(array, (byte) 0);
 
-    // initialize val only once per value of maxValLength so that all timings
+    // initialize val only once per value of valueLength so that all timings
     // are encoding the same value.
     if (null == val || valLen != valueLength) {
       valLen = valueLength;
