@@ -5,11 +5,11 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.types.OrderedFloat64;
 import org.apache.hadoop.hbase.types.OrderedNumeric;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Order;
-import org.apache.hadoop.io.DoubleWritable;
 
 import com.google.caliper.AfterExperiment;
 import com.google.caliper.BeforeExperiment;
@@ -27,8 +27,8 @@ public class BenchmarkDoubleEncodings {
 
   ByteBuffer buff = ByteBuffer.allocate(100);
   byte[] array = buff.array();
+  ImmutableBytesWritable w;
   double val = new Random(System.currentTimeMillis()).nextDouble();
-  DoubleWritable w;
 
   OrderedFloat64 orderedFloat64;
   OrderedNumeric orderedNumeric;
@@ -38,8 +38,8 @@ public class BenchmarkDoubleEncodings {
   @BeforeExperiment
   public void setUp() {
     buff.clear();
+    w = new ImmutableBytesWritable(array);
     Arrays.fill(array, (byte) 0);
-    w = new DoubleWritable();
 
     orderedFloat64 =
         this.order == Order.ASCENDING ? OrderedFloat64.ASCENDING : OrderedFloat64.DESCENDING;
@@ -57,8 +57,6 @@ public class BenchmarkDoubleEncodings {
 
   @AfterExperiment
   public void tearDown() {
-    w = null;
-
     orderedFloat64 = null;
     orderedNumeric = null;
     orderlyDoubleWritable = null;
@@ -123,28 +121,28 @@ public class BenchmarkDoubleEncodings {
 
   @Benchmark
   public int orderlyDoubleWritable(int reps) throws IOException {
-    byte[] array = this.array;
+    ImmutableBytesWritable w = this.w;
+    double val = this.val;
     DoubleWritableRowKey r = this.orderlyDoubleWritable;
-    DoubleWritable w = this.w;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      r.serialize(w, array, 0);
-      dummy ^= array[0];
+      r.serialize(val, w);
+      dummy ^= w.get()[0];
     }
     return dummy;
   }
 
   @Benchmark
   public int orderlyDouble(int reps) throws IOException {
-    byte[] array = this.array;
+    ImmutableBytesWritable w = this.w;
     double val = this.val;
     DoubleRowKey r = this.orderlyDouble;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      r.serialize(val, array, 0);
-      dummy ^= array[0];
+      r.serialize(val, w);
+      dummy ^= w.get()[0];
     }
     return dummy;
   }

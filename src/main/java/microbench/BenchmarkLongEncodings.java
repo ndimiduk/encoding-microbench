@@ -5,11 +5,11 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.types.OrderedInt64;
 import org.apache.hadoop.hbase.types.OrderedNumeric;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Order;
-import org.apache.hadoop.io.LongWritable;
 
 import com.google.caliper.AfterExperiment;
 import com.google.caliper.BeforeExperiment;
@@ -29,8 +29,8 @@ public class BenchmarkLongEncodings {
 
   ByteBuffer buff = ByteBuffer.allocate(100);
   byte[] array = buff.array();
+  ImmutableBytesWritable w;
   long val = new Random(System.currentTimeMillis()).nextLong();
-  LongWritable w;
 
   OrderedInt64 orderedInt64;
   OrderedNumeric orderedNumeric;
@@ -41,8 +41,8 @@ public class BenchmarkLongEncodings {
   @BeforeExperiment
   public void setUp() {
     buff.clear();
+    w = new ImmutableBytesWritable(array);
     Arrays.fill(array, (byte) 0);
-    w = new LongWritable();
 
     orderedInt64 = this.order == Order.ASCENDING ? OrderedInt64.ASCENDING : OrderedInt64.DESCENDING;
     orderedNumeric =
@@ -60,8 +60,6 @@ public class BenchmarkLongEncodings {
 
   @AfterExperiment
   public void tearDown() {
-    w = null;
-
     orderedInt64 = null;
     orderedNumeric = null;
     phoenixOrder = null;
@@ -132,35 +130,35 @@ public class BenchmarkLongEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      dummy ^= System.identityHashCode(PDataType.LONG.toBytes(val, order));
+      dummy ^= PDataType.LONG.toBytes(val, order)[0];
     }
     return dummy;
   }
 
   @Benchmark
   public int orderlyLongWritable(int reps) throws IOException {
-    byte[] array = this.array;
+    ImmutableBytesWritable w = this.w;
+    long val = this.val;
     LongWritableRowKey r = this.orderlyLongWritable;
-    LongWritable w = this.w;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      r.serialize(w, array, 0);
-      dummy ^= array[0];
+      r.serialize(val, w);
+      dummy ^= w.get()[0];
     }
     return dummy;
   }
 
   @Benchmark
   public int orderlyLong(int reps) throws IOException {
-    byte[] array = this.array;
+    ImmutableBytesWritable w = this.w;
     long val = this.val;
     LongRowKey r = this.orderlyLong;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      r.serialize(val, array, 0);
-      dummy ^= array[0];
+      r.serialize(val, w);
+      dummy ^= w.get()[0];
     }
     return dummy;
   }
