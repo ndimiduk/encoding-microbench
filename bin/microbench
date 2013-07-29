@@ -11,4 +11,4 @@ then
   exit
 fi
 
-mvn clean compile exec:java -Dexec.mainClass=com.google.caliper.runner.CaliperMain -Dexec.args="$*"
+mvn exec:java -Dexec.mainClass=com.google.caliper.runner.CaliperMain -Dexec.args="$*"
