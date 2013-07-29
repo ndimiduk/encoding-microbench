@@ -20,6 +20,7 @@ import com.google.caliper.api.SkipThisScenarioException;
 import com.google.caliper.api.VmOptions;
 import com.gotometrics.orderly.FixedByteArrayRowKey;
 import com.gotometrics.orderly.FixedBytesWritableRowKey;
+import com.gotometrics.orderly.RowKeyUtils;
 import com.gotometrics.orderly.VariableLengthByteArrayRowKey;
 import com.gotometrics.orderly.VariableLengthBytesWritableRowKey;
 import com.salesforce.phoenix.schema.ColumnModifier;
@@ -162,6 +163,7 @@ public class BenchmarkByteEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      RowKeyUtils.seek(w, -w.getOffset());
       r.serialize(val, w);
       dummy ^= w.get()[0];
     }
@@ -176,6 +178,7 @@ public class BenchmarkByteEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      RowKeyUtils.seek(w, -w.getOffset());
       r.serialize(val, w);
       dummy ^= w.get()[0];
     }
@@ -190,6 +193,7 @@ public class BenchmarkByteEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      RowKeyUtils.seek(w, -w.getOffset());
       r.serialize(val, w);
       dummy ^= w.get()[0];
     }
@@ -204,6 +208,7 @@ public class BenchmarkByteEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      RowKeyUtils.seek(w, -w.getOffset());
       r.serialize(val, w);
       dummy ^= w.get()[0];
     }

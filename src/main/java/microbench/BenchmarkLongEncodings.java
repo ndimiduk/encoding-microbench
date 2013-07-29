@@ -20,6 +20,7 @@ import com.google.caliper.api.SkipThisScenarioException;
 import com.google.caliper.api.VmOptions;
 import com.gotometrics.orderly.LongRowKey;
 import com.gotometrics.orderly.LongWritableRowKey;
+import com.gotometrics.orderly.RowKeyUtils;
 import com.salesforce.phoenix.schema.ColumnModifier;
 import com.salesforce.phoenix.schema.PDataType;
 
@@ -147,6 +148,7 @@ public class BenchmarkLongEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      RowKeyUtils.seek(w, -w.getOffset());
       r.serialize(val, w);
       dummy ^= w.get()[0];
     }
@@ -161,6 +163,7 @@ public class BenchmarkLongEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      RowKeyUtils.seek(w, -w.getOffset());
       r.serialize(val, w);
       dummy ^= w.get()[0];
     }

@@ -16,6 +16,7 @@ import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
 import com.google.caliper.api.SkipThisScenarioException;
 import com.google.caliper.api.VmOptions;
+import com.gotometrics.orderly.RowKeyUtils;
 import com.gotometrics.orderly.StringRowKey;
 import com.gotometrics.orderly.UTF8RowKey;
 import com.salesforce.phoenix.schema.ColumnModifier;
@@ -130,6 +131,7 @@ public class BenchmarkStringEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      RowKeyUtils.seek(w, -w.getOffset());
       r.serialize(val, w);
       dummy ^= w.get()[0];
     }
@@ -144,6 +146,7 @@ public class BenchmarkStringEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      RowKeyUtils.seek(w, -w.getOffset());
       r.serialize(valBytes, w);
       dummy ^= w.get()[0];
     }

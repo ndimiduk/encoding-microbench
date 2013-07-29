@@ -20,6 +20,7 @@ import com.google.caliper.api.SkipThisScenarioException;
 import com.google.caliper.api.VmOptions;
 import com.gotometrics.orderly.DoubleRowKey;
 import com.gotometrics.orderly.DoubleWritableRowKey;
+import com.gotometrics.orderly.RowKeyUtils;
 
 @VmOptions({ "-server" })
 public class BenchmarkDoubleEncodings {
@@ -131,6 +132,7 @@ public class BenchmarkDoubleEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      RowKeyUtils.seek(w, -w.getOffset());
       r.serialize(val, w);
       dummy ^= w.get()[0];
     }
@@ -145,6 +147,7 @@ public class BenchmarkDoubleEncodings {
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
+      RowKeyUtils.seek(w, -w.getOffset());
       r.serialize(val, w);
       dummy ^= w.get()[0];
     }
