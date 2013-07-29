@@ -5,4 +5,10 @@ bin=`cd "$bin">/dev/null; pwd`
 
 cd ${bin}/..
 
+if [[ ${#BASH_ARGV[*]} -eq 1 && ${BASH_ARGV[0]} = "list" ]]
+then
+  grep -l Benchmark src/main/java/microbench/* | cut -d/ -f4,5 | cut -d. -f1 | tr '/' .
+  exit
+fi
+
 mvn clean compile exec:java -Dexec.mainClass=com.google.caliper.runner.CaliperMain -Dexec.args="$*"
