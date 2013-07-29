@@ -2,6 +2,7 @@ package microbench;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.hadoop.hbase.types.OrderedInt64;
@@ -24,14 +25,13 @@ import com.salesforce.phoenix.schema.PDataType;
 @VmOptions({ "-server" })
 public class BenchmarkLongEncodings {
 
-  @Param({ "100" }) int numVals;
   @Param({ "ASCENDING", "DESCENDING" }) Order order;
 
   Random rand = new Random(System.currentTimeMillis());
-  ByteBuffer[] buffs;
-  byte[][] arrays;
-  long[] vals;
-  LongWritable[] ws;
+  ByteBuffer buff = ByteBuffer.allocate(100);
+  byte[] array = buff.array();
+  long val = rand.nextLong();
+  LongWritable w;
 
   OrderedInt64 orderedInt64;
   OrderedNumeric orderedNumeric;
@@ -41,22 +41,13 @@ public class BenchmarkLongEncodings {
 
   @BeforeExperiment
   public void setUp() {
-    buffs = new ByteBuffer[numVals];
-    arrays = new byte[numVals][];
-    vals = new long[numVals];
-    ws = new LongWritable[numVals];
-
-    for (int i = 0; i < numVals; i++) {
-      buffs[i] = ByteBuffer.allocate(100);
-      arrays[i] = buffs[i].array();
-      vals[i] = rand.nextLong();
-      ws[i] = new LongWritable(vals[i]);
-    }
+    buff.clear();
+    Arrays.fill(array, (byte) 0);
+    w = new LongWritable();
 
     orderedInt64 = this.order == Order.ASCENDING ? OrderedInt64.ASCENDING : OrderedInt64.DESCENDING;
-    orderedNumeric = this.order == Order.ASCENDING ?
-        OrderedNumeric.ASCENDING :
-        OrderedNumeric.DESCENDING;
+    orderedNumeric =
+        this.order == Order.ASCENDING ? OrderedNumeric.ASCENDING : OrderedNumeric.DESCENDING;
     phoenixOrder = Order.ASCENDING == this.order ? null : ColumnModifier.SORT_DESC;
     orderlyLongWritable = new LongWritableRowKey();
     orderlyLongWritable.setOrder(Order.ASCENDING == this.order ?
@@ -70,9 +61,7 @@ public class BenchmarkLongEncodings {
 
   @AfterExperiment
   public void tearDown() {
-    buffs = null;
-    vals = null;
-    ws = null;
+    w = null;
 
     orderedInt64 = null;
     orderedNumeric = null;
@@ -85,111 +74,94 @@ public class BenchmarkLongEncodings {
   public int bytes(int reps) {
     if (Order.DESCENDING == this.order) throw new SkipThisScenarioException();
     // tutorial video recommends minimizing member variable access overhead from test
-    long[] vals = this.vals;
-    byte[][] arrays = this.arrays;
+    long val = this.val;
+    byte[] array = this.array;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      for (int j = 0; j < vals.length; j++) {
-        dummy ^= Bytes.putLong(arrays[j], 0, vals[j]);
-      }
+      dummy ^= Bytes.putLong(array, 0, val);
     }
     return dummy;
   }
 
   @Benchmark
   public int orderedInt64Boxing(int reps) {
-    ByteBuffer[] buffs = this.buffs;
-    long[] vals = this.vals;
+    ByteBuffer buff = this.buff;
+    long val = this.val;
     OrderedInt64 ob = this.orderedInt64;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      for (int j = 0; j < vals.length; j++) {
-        buffs[j].clear();
-        ob.encode(buffs[j], vals[j]);
-        dummy ^= buffs[j].position();
-      }
+      ob.encode(buff, val);
+      dummy ^= buff.position();
     }
     return dummy;
   }
 
   @Benchmark
   public int orderedInt64Primitive(int reps) {
-    ByteBuffer[] buffs = this.buffs;
-    long[] vals = this.vals;
+    ByteBuffer buff = this.buff;
+    long val = this.val;
     OrderedInt64 ob = this.orderedInt64;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      for (int j = 0; j < vals.length; j++) {
-        buffs[j].clear();
-        ob.encodeLong(buffs[j], vals[j]);
-        dummy ^= buffs[j].position();
-      }
+      ob.encodeLong(buff, val);
+      dummy ^= buff.position();
     }
     return dummy;
   }
 
   @Benchmark
   public int orderedBytesNumeric(int reps) {
-    ByteBuffer[] buffs = this.buffs;
-    long[] vals = this.vals;
+    ByteBuffer buff = this.buff;
+    long val = this.val;
     OrderedNumeric o = this.orderedNumeric;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      for (int j = 0; j < vals.length; j++) {
-        buffs[j].clear();
-        o.encodeLong(buffs[j], vals[j]);
-        dummy ^= buffs[j].position();
-      }
+      o.encodeLong(buff, val);
+      dummy ^= buff.position();
     }
     return dummy;
   }
 
   @Benchmark
   public int phoenixLong(int reps) {
-    long[] vals = this.vals;
+    long val = this.val;
     ColumnModifier order = this.phoenixOrder;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      for (int j = 0; j < vals.length; j++) {
-        dummy ^= System.identityHashCode(PDataType.LONG.toBytes(vals[j], order));
-      }
+      dummy ^= System.identityHashCode(PDataType.LONG.toBytes(val, order));
     }
     return dummy;
   }
 
   @Benchmark
   public int orderlyLongWritable(int reps) throws IOException {
-    byte[][] arrays = this.arrays;
-    LongWritableRowKey r = orderlyLongWritable;
-    LongWritable[] ws = this.ws;
+    byte[] array = this.array;
+    LongWritableRowKey r = this.orderlyLongWritable;
+    LongWritable w = this.w;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      for (int j = 0; j < vals.length; j++) {
-        r.serialize(ws[j], arrays[j], 0);
-        dummy ^= arrays[j][0];
-      }
+      r.serialize(w, array, 0);
+      dummy ^= array[0];
     }
     return dummy;
   }
 
   @Benchmark
   public int orderlyLong(int reps) throws IOException {
-    byte[][] arrays = this.arrays;
-    long[] vals = this.vals;
-    LongRowKey r = orderlyLong;
+    byte[] array = this.array;
+    long val = this.val;
+    LongRowKey r = this.orderlyLong;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      for (int j = 0; j < vals.length; j++) {
-        r.serialize(vals[j], arrays[j], 0);
-        dummy ^= arrays[j][0];
-      }
+      r.serialize(val, array, 0);
+      dummy ^= array[0];
     }
     return dummy;
   }
