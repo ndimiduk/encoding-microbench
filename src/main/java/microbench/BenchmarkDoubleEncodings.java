@@ -1,6 +1,7 @@
 package microbench;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
@@ -21,6 +22,8 @@ import com.google.caliper.api.VmOptions;
 import com.gotometrics.orderly.DoubleRowKey;
 import com.gotometrics.orderly.DoubleWritableRowKey;
 import com.gotometrics.orderly.RowKeyUtils;
+import com.salesforce.phoenix.schema.ColumnModifier;
+import com.salesforce.phoenix.schema.PDataType;
 
 @VmOptions({ "-server" })
 public class BenchmarkDoubleEncodings {
@@ -34,6 +37,7 @@ public class BenchmarkDoubleEncodings {
 
   OrderedFloat64 orderedFloat64;
   OrderedNumeric orderedNumeric;
+  ColumnModifier phoenixOrder;
   DoubleWritableRowKey orderlyDoubleWritable;
   DoubleRowKey orderlyDouble;
 
@@ -47,6 +51,7 @@ public class BenchmarkDoubleEncodings {
         this.order == Order.ASCENDING ? OrderedFloat64.ASCENDING : OrderedFloat64.DESCENDING;
     orderedNumeric =
         this.order == Order.ASCENDING ? OrderedNumeric.ASCENDING : OrderedNumeric.DESCENDING;
+    phoenixOrder = Order.ASCENDING == this.order ? null : ColumnModifier.SORT_DESC;
     orderlyDoubleWritable = new DoubleWritableRowKey();
     orderlyDoubleWritable.setOrder(Order.ASCENDING == this.order ?
         com.gotometrics.orderly.Order.ASCENDING :
@@ -61,6 +66,7 @@ public class BenchmarkDoubleEncodings {
   public void tearDown() {
     orderedFloat64 = null;
     orderedNumeric = null;
+    phoenixOrder = null;
     orderlyDoubleWritable = null;
     orderlyDouble = null;
   }
@@ -120,6 +126,18 @@ public class BenchmarkDoubleEncodings {
       buff.clear();
       o.encodeDouble(buff, val);
       dummy ^= buff.position();
+    }
+    return dummy;
+  }
+
+  @Benchmark
+  public int phoenixDecimal(int reps) {
+    double val = this.val;
+    ColumnModifier order = this.phoenixOrder;
+    int dummy = 0;
+
+    for (int i = 0; i < reps; i++) {
+      dummy ^= PDataType.DECIMAL.toBytes(BigDecimal.valueOf(val), order)[0];
     }
     return dummy;
   }
