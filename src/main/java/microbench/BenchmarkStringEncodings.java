@@ -1,14 +1,15 @@
 package microbench;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.types.OrderedString;
+import org.apache.hadoop.hbase.types.Order;
+import org.apache.hadoop.hbase.util.ByteRange;
+import org.apache.hadoop.hbase.util.ByteRangeUtils;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.hbase.util.Order;
+import org.apache.hadoop.hbase.util.OrderedBytes;
 
 import com.google.caliper.AfterExperiment;
 import com.google.caliper.BeforeExperiment;
@@ -20,7 +21,6 @@ import com.gotometrics.orderly.RowKeyUtils;
 import com.gotometrics.orderly.StringRowKey;
 import com.gotometrics.orderly.UTF8RowKey;
 import com.salesforce.phoenix.schema.ColumnModifier;
-import com.salesforce.phoenix.schema.PDataType;
 
 @VmOptions({ "-server" })
 public class BenchmarkStringEncodings {
@@ -28,21 +28,20 @@ public class BenchmarkStringEncodings {
   @Param({ "15", "250", "1024" }) int valueLength;
   @Param({ "ASCENDING", "DESCENDING" }) Order order;
 
-  ByteBuffer buff = ByteBuffer.allocate(1024 * 4);
-  byte[] array = buff.array();
+  ByteRange buff = new ByteRange(1024 * 4);
+  byte[] array = buff.getBytes();
   ImmutableBytesWritable w;
   String val;
   byte[] valBytes;
   int valLen = -1;
 
-  OrderedString orderedString;
   ColumnModifier phoenixOrder;
   StringRowKey orderlyString;
   UTF8RowKey orderlyUtf8;
 
   @BeforeExperiment
   public void setUp() {
-    buff.clear();
+    ByteRangeUtils.clear(buff);
     w = new ImmutableBytesWritable(array);
     Arrays.fill(array, (byte) 0);
 
@@ -59,8 +58,6 @@ public class BenchmarkStringEncodings {
       valBytes = Bytes.toBytes(val);
     }
 
-    orderedString =
-        this.order == Order.ASCENDING ? OrderedString.ASCENDING : OrderedString.DESCENDING;
     phoenixOrder = Order.ASCENDING == this.order ? null : ColumnModifier.SORT_DESC;
     orderlyString = new StringRowKey();
     orderlyString.setOrder(Order.ASCENDING == this.order ?
@@ -74,7 +71,6 @@ public class BenchmarkStringEncodings {
 
   @AfterExperiment
   public void tearDown() {
-    orderedString = null;
     phoenixOrder = null;
     orderlyString = null;
     orderlyUtf8 = null;
@@ -95,15 +91,15 @@ public class BenchmarkStringEncodings {
 
   @Benchmark
   public int orderedString(int reps) {
-    ByteBuffer buff = this.buff;
+    ByteRange buff = this.buff;
     String val = this.val;
-    OrderedString ob = this.orderedString;
+    Order ord = this.order;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      buff.clear();
-      ob.encode(buff, val);
-      dummy ^= buff.position();
+      ByteRangeUtils.clear(buff);
+      OrderedBytes.encodeString(buff, val, ord);
+      dummy ^= buff.getPosition();
     }
     return dummy;
   }

@@ -1,15 +1,15 @@
 package microbench;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.types.OrderedBlob;
-import org.apache.hadoop.hbase.types.OrderedBlobVar;
+import org.apache.hadoop.hbase.types.Order;
+import org.apache.hadoop.hbase.util.ByteRange;
+import org.apache.hadoop.hbase.util.ByteRangeUtils;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.hbase.util.Order;
+import org.apache.hadoop.hbase.util.OrderedBytes;
 import org.apache.hadoop.io.BytesWritable;
 
 import com.google.caliper.AfterExperiment;
@@ -33,14 +33,12 @@ public class BenchmarkByteEncodings {
   @Param({ "ASCENDING", "DESCENDING" }) Order order;
 
   Random rand = new Random(System.currentTimeMillis());
-  ByteBuffer buff = ByteBuffer.allocate(1024 * 2);
-  byte[] array = buff.array();
+  ByteRange buff = new ByteRange(1024 * 2);
+  byte[] array = buff.getBytes();
   ImmutableBytesWritable w;
   byte[] val;
   int valLen;
 
-  OrderedBlob orderedBlob;
-  OrderedBlobVar orderedBlobVar;
   ColumnModifier phoenixOrder;
   FixedBytesWritableRowKey orderlyFixedBytesWritable;
   FixedByteArrayRowKey orderlyFixedByteArray;
@@ -49,7 +47,7 @@ public class BenchmarkByteEncodings {
 
   @BeforeExperiment
   public void setUp() {
-    buff.clear();
+    ByteRangeUtils.clear(buff);
     w = new ImmutableBytesWritable(array);
     Arrays.fill(array, (byte) 0);
 
@@ -67,9 +65,6 @@ public class BenchmarkByteEncodings {
       }
     }
 
-    orderedBlob = this.order == Order.ASCENDING ? OrderedBlob.ASCENDING : OrderedBlob.DESCENDING;
-    orderedBlobVar =
-        this.order == Order.ASCENDING ? OrderedBlobVar.ASCENDING : OrderedBlobVar.DESCENDING;
     phoenixOrder = Order.ASCENDING == this.order ? null : ColumnModifier.SORT_DESC;
     orderlyFixedBytesWritable = new FixedBytesWritableRowKey(valLen);
     orderlyFixedBytesWritable.setOrder(Order.ASCENDING == this.order ?
@@ -91,8 +86,6 @@ public class BenchmarkByteEncodings {
 
   @AfterExperiment
   public void tearDown() {
-    orderedBlob = null;
-    orderedBlobVar = null;
     phoenixOrder = null;
     orderlyFixedBytesWritable = null;
     orderlyFixedByteArray = null;
@@ -114,31 +107,31 @@ public class BenchmarkByteEncodings {
   }
 
   @Benchmark
-  public int orderedBlob(int reps) {
-    ByteBuffer buff = this.buff;
+  public int orderedBlobCopy(int reps) {
+    ByteRange buff = this.buff;
     byte[] val = this.val;
-    OrderedBlob ob = this.orderedBlob;
+    Order ord = this.order;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      buff.clear();
-      ob.encode(buff, val);
-      dummy ^= buff.position();
+      ByteRangeUtils.clear(buff);
+      OrderedBytes.encodeBlobCopy(buff, val, ord);
+      dummy ^= buff.getPosition();
     }
     return dummy;
   }
 
   @Benchmark
   public int orderedBlobVar(int reps) {
-    ByteBuffer buff = this.buff;
+    ByteRange buff = this.buff;
     byte[] val = this.val;
-    OrderedBlobVar ob = this.orderedBlobVar;
+    Order ord = this.order;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      buff.clear();
-      ob.encode(buff, val);
-      dummy ^= buff.position();
+      ByteRangeUtils.clear(buff);
+      OrderedBytes.encodeBlobVar(buff, val, ord);
+      dummy ^= buff.getPosition();
     }
     return dummy;
   }

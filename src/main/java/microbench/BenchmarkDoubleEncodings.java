@@ -1,16 +1,15 @@
 package microbench;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.types.OrderedFloat64;
-import org.apache.hadoop.hbase.types.OrderedNumeric;
+import org.apache.hadoop.hbase.types.Order;
+import org.apache.hadoop.hbase.util.ByteRange;
+import org.apache.hadoop.hbase.util.ByteRangeUtils;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.hbase.util.Order;
+import org.apache.hadoop.hbase.util.OrderedBytes;
 import org.apache.hadoop.io.DoubleWritable;
 
 import com.google.caliper.AfterExperiment;
@@ -30,27 +29,21 @@ public class BenchmarkDoubleEncodings {
 
   @Param({ "ASCENDING", "DESCENDING" }) Order order;
 
-  ByteBuffer buff = ByteBuffer.allocate(100);
-  byte[] array = buff.array();
+  ByteRange buff = new ByteRange(100);
+  byte[] array = buff.getBytes();
   ImmutableBytesWritable w;
   double val = new Random(System.currentTimeMillis()).nextDouble();
 
-  OrderedFloat64 orderedFloat64;
-  OrderedNumeric orderedNumeric;
   ColumnModifier phoenixOrder;
   DoubleWritableRowKey orderlyDoubleWritable;
   DoubleRowKey orderlyDouble;
 
   @BeforeExperiment
   public void setUp() {
-    buff.clear();
+    ByteRangeUtils.clear(buff);
     w = new ImmutableBytesWritable(array);
     Arrays.fill(array, (byte) 0);
 
-    orderedFloat64 =
-        this.order == Order.ASCENDING ? OrderedFloat64.ASCENDING : OrderedFloat64.DESCENDING;
-    orderedNumeric =
-        this.order == Order.ASCENDING ? OrderedNumeric.ASCENDING : OrderedNumeric.DESCENDING;
     phoenixOrder = Order.ASCENDING == this.order ? null : ColumnModifier.SORT_DESC;
     orderlyDoubleWritable = new DoubleWritableRowKey();
     orderlyDoubleWritable.setOrder(Order.ASCENDING == this.order ?
@@ -64,8 +57,6 @@ public class BenchmarkDoubleEncodings {
 
   @AfterExperiment
   public void tearDown() {
-    orderedFloat64 = null;
-    orderedNumeric = null;
     phoenixOrder = null;
     orderlyDoubleWritable = null;
     orderlyDouble = null;
@@ -87,57 +78,57 @@ public class BenchmarkDoubleEncodings {
 
   @Benchmark
   public int orderedFloat64Boxing(int reps) {
-    ByteBuffer buff = this.buff;
-    double val = this.val;
-    OrderedFloat64 ob = this.orderedFloat64;
+    ByteRange buff = this.buff;
+    Double val = Double.valueOf(this.val);
+    Order ord = this.order;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      buff.clear();
-      ob.encode(buff, val);
-      dummy ^= buff.position();
+      ByteRangeUtils.clear(buff);
+      OrderedBytes.encodeFloat64(buff, val, ord);
+      dummy ^= buff.getPosition();
     }
     return dummy;
   }
 
   @Benchmark
   public int orderedFloat64Primitive(int reps) {
-    ByteBuffer buff = this.buff;
+    ByteRange buff = this.buff;
     double val = this.val;
-    OrderedFloat64 ob = this.orderedFloat64;
+    Order ord = this.order;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      buff.clear();
-      ob.encodeDouble(buff, val);
-      dummy ^= buff.position();
+      ByteRangeUtils.clear(buff);
+      OrderedBytes.encodeFloat64(buff, val, ord);
+      dummy ^= buff.getPosition();
     }
     return dummy;
   }
 
   @Benchmark
   public int orderedBytesNumeric(int reps) {
-    ByteBuffer buff = this.buff;
+    ByteRange buff = this.buff;
     double val = this.val;
-    OrderedNumeric o = this.orderedNumeric;
+    Order ord = this.order;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      buff.clear();
-      o.encodeDouble(buff, val);
-      dummy ^= buff.position();
+      ByteRangeUtils.clear(buff);
+      OrderedBytes.encodeNumeric(buff, val, ord);
+      dummy ^= buff.getPosition();
     }
     return dummy;
   }
 
   @Benchmark
   public int phoenixDecimal(int reps) {
-    double val = this.val;
+    Double val = Double.valueOf(this.val);
     ColumnModifier order = this.phoenixOrder;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      dummy ^= PDataType.DECIMAL.toBytes(BigDecimal.valueOf(val), order)[0];
+      dummy ^= PDataType.DECIMAL.toBytes(val, order)[0];
     }
     return dummy;
   }

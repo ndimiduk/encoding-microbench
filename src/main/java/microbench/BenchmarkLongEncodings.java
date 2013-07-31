@@ -1,15 +1,15 @@
 package microbench;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.types.OrderedInt64;
-import org.apache.hadoop.hbase.types.OrderedNumeric;
+import org.apache.hadoop.hbase.types.Order;
+import org.apache.hadoop.hbase.util.ByteRange;
+import org.apache.hadoop.hbase.util.ByteRangeUtils;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.hbase.util.Order;
+import org.apache.hadoop.hbase.util.OrderedBytes;
 import org.apache.hadoop.io.LongWritable;
 
 import com.google.caliper.AfterExperiment;
@@ -29,26 +29,21 @@ public class BenchmarkLongEncodings {
 
   @Param({ "ASCENDING", "DESCENDING" }) Order order;
 
-  ByteBuffer buff = ByteBuffer.allocate(100);
-  byte[] array = buff.array();
+  ByteRange buff = new ByteRange(100);
+  byte[] array = buff.getBytes();
   ImmutableBytesWritable w;
   long val = new Random(System.currentTimeMillis()).nextLong();
 
-  OrderedInt64 orderedInt64;
-  OrderedNumeric orderedNumeric;
   ColumnModifier phoenixOrder;
   LongWritableRowKey orderlyLongWritable;
   LongRowKey orderlyLong;
 
   @BeforeExperiment
   public void setUp() {
-    buff.clear();
+    ByteRangeUtils.clear(buff);
     w = new ImmutableBytesWritable(array);
     Arrays.fill(array, (byte) 0);
 
-    orderedInt64 = this.order == Order.ASCENDING ? OrderedInt64.ASCENDING : OrderedInt64.DESCENDING;
-    orderedNumeric =
-        this.order == Order.ASCENDING ? OrderedNumeric.ASCENDING : OrderedNumeric.DESCENDING;
     phoenixOrder = Order.ASCENDING == this.order ? null : ColumnModifier.SORT_DESC;
     orderlyLongWritable = new LongWritableRowKey();
     orderlyLongWritable.setOrder(Order.ASCENDING == this.order ?
@@ -62,8 +57,6 @@ public class BenchmarkLongEncodings {
 
   @AfterExperiment
   public void tearDown() {
-    orderedInt64 = null;
-    orderedNumeric = null;
     phoenixOrder = null;
     orderlyLongWritable = null;
     orderlyLong = null;
@@ -85,45 +78,45 @@ public class BenchmarkLongEncodings {
 
   @Benchmark
   public int orderedInt64Boxing(int reps) {
-    ByteBuffer buff = this.buff;
-    long val = this.val;
-    OrderedInt64 ob = this.orderedInt64;
+    ByteRange buff = this.buff;
+    Long val = Long.valueOf(this.val);
+    Order ord = this.order;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      buff.clear();
-      ob.encode(buff, val);
-      dummy ^= buff.position();
+      ByteRangeUtils.clear(buff);
+      OrderedBytes.encodeInt64(buff, val, ord);
+      dummy ^= buff.getPosition();
     }
     return dummy;
   }
 
   @Benchmark
   public int orderedInt64Primitive(int reps) {
-    ByteBuffer buff = this.buff;
+    ByteRange buff = this.buff;
     long val = this.val;
-    OrderedInt64 ob = this.orderedInt64;
+    Order ord = this.order;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      buff.clear();
-      ob.encodeLong(buff, val);
-      dummy ^= buff.position();
+      ByteRangeUtils.clear(buff);
+      OrderedBytes.encodeInt64(buff, val, ord);
+      dummy ^= buff.getPosition();
     }
     return dummy;
   }
 
   @Benchmark
   public int orderedBytesNumeric(int reps) {
-    ByteBuffer buff = this.buff;
+    ByteRange buff = this.buff;
     long val = this.val;
-    OrderedNumeric o = this.orderedNumeric;
+    Order ord = this.order;
     int dummy = 0;
 
     for (int i = 0; i < reps; i++) {
-      buff.clear();
-      o.encodeLong(buff, val);
-      dummy ^= buff.position();
+      ByteRangeUtils.clear(buff);
+      OrderedBytes.encodeNumeric(buff, val, ord);
+      dummy ^= buff.getPosition();
     }
     return dummy;
   }
