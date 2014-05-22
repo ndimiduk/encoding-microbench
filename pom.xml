@@ -32,7 +32,7 @@ questions.
     <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Auto-generated JMH benchmark</name>
+    <name>DataType encoder microbenchmark</name>
 
     <dependencies>
         <dependency>
@@ -49,7 +49,12 @@ questions.
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-common</artifactId>
-            <version>0.96.0-hadoop2</version>
+            <version>0.98.1-hadoop1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.phoenix</groupId>
+            <artifactId>phoenix-core</artifactId>
+            <version>4.0.0-incubating</version>
         </dependency>
     </dependencies>
 

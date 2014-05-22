@@ -25,10 +25,14 @@
 
 package com.n10k;
 
+import org.apache.hadoop.hbase.types.DataType;
+import org.apache.hadoop.hbase.types.OrderedNumeric;
 import org.apache.hadoop.hbase.util.Order;
 import org.apache.hadoop.hbase.util.OrderedBytes;
 import org.apache.hadoop.hbase.util.PositionedByteRange;
 import org.apache.hadoop.hbase.util.SimplePositionedByteRange;
+import org.apache.phoenix.schema.PDataType;
+import org.apache.phoenix.schema.SortOrder;
 import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
@@ -58,7 +62,14 @@ public class DecimalEncodingBenchmark {
   public void testOrderedBytesNumeric() {
     for (int i = 0; i < DATA.length; i++) {
       pbr.setPosition(0);
-      OrderedBytes.encodeNumeric(pbr, DATA[i], Order.ASCENDING);
+      OrderedNumeric.ASCENDING.encode(pbr, DATA[i]);
+    }
+  }
+
+  @GenerateMicroBenchmark
+  public void testPhoenixDecimal() {
+    for (int i = 0; i < DATA.length; i++) {
+      PDataType.DECIMAL.toBytes(DATA[i], SortOrder.ASC);
     }
   }
 }
